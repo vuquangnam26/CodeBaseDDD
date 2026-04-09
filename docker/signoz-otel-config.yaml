@@ -1,0 +1,52 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:14250
+
+processors:
+  batch:
+    send_batch_size: 1024
+    timeout: 10s
+
+exporters:
+  clickhouse:
+    dsn: "tcp://clickhouse:9000?database=signoz_traces"
+    metrics_table_name: signoz_traces.distributed_samples_v4
+    traces_table_name: signoz_traces.distributed_signoz_index_v3
+    logs_table_name: signoz_logs.distributed_logs_v2
+    create_schema: true
+    low_cardinal_attributes:
+      - service.name
+      - service.namespace
+      - deployment.environment
+      - http.method
+      - http.status_code
+      - rpc.method
+      - rpc.service
+      - messaging.system
+      - messaging.operation
+    max_content_length_metrics: 2000
+    max_content_length_traces: 2000
+    max_content_length_logs: 640000
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, jaeger]
+      processors: [batch]
+      exporters: [clickhouse]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [clickhouse]

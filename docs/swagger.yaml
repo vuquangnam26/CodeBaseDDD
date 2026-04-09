@@ -1,0 +1,286 @@
+basePath: /
+definitions:
+  github_com_namcuongq_order-service_internal_application_dto.AddItemRequest:
+    properties:
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      unit_price:
+        type: integer
+    required:
+    - product_id
+    - product_name
+    - quantity
+    - unit_price
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest:
+    properties:
+      customer_id:
+        type: string
+    required:
+    - customer_id
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult:
+    properties:
+      order_id:
+        type: string
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+      trace_id:
+        type: string
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse:
+    properties:
+      id:
+        type: string
+      product_id:
+        type: string
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      total_price:
+        type: integer
+      unit_price:
+        type: integer
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.OrderResponse:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      id:
+        type: string
+      item_count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse'
+        type: array
+      status:
+        type: string
+      total_amount:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_count:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: A production-grade Go backend demonstrating CQRS, Transactional Outbox,
+    and event-driven projection.
+  title: Order Service API
+  version: "1.0"
+paths:
+  /orders:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of orders, optionally filtered
+      parameters:
+      - description: Filter by order status
+        in: query
+        name: status
+        type: string
+      - description: Filter by customer ID
+        in: query
+        name: customer_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Sort field (created_at, total_amount)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+      summary: List orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create an order for a given customer
+      parameters:
+      - description: Create Order Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+      summary: Create a new order
+      tags:
+      - orders
+  /orders/{orderID}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch an order by its ID from the read model
+      parameters:
+      - description: Order ID
+        in: path
+        name: orderID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+      summary: Get order details
+      tags:
+      - orders
+  /orders/{orderID}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Transition order status from DRAFT to CONFIRMED
+      parameters:
+      - description: Order ID
+        in: path
+        name: orderID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+      summary: Confirm an order
+      tags:
+      - orders
+  /orders/{orderID}/items:
+    post:
+      consumes:
+      - application/json
+      description: Add a new product to an existing DRAFT order
+      parameters:
+      - description: Order ID
+        in: path
+        name: orderID
+        required: true
+        type: string
+      - description: Add Item Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse'
+      summary: Add an item to an order
+      tags:
+      - orders
+swagger: "2.0"
