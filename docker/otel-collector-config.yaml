@@ -13,7 +13,7 @@ processors:
 
 exporters:
   otlp:
-    endpoint: signoz:4317
+    endpoint: jaeger:4317
     tls:
       insecure: true
 

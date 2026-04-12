@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 // --- Domain -> Persistence ---

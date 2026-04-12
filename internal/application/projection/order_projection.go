@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"go.uber.org/zap"
+
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 const HandlerName = "OrderProjection"
@@ -18,13 +19,13 @@ const HandlerName = "OrderProjection"
 type OrderProjectionHandler struct {
 	readStore      port.ReadModelStore
 	processedStore port.ProcessedEventStore
-	logger         *slog.Logger
+	logger         *zap.SugaredLogger
 }
 
 func NewOrderProjectionHandler(
 	readStore port.ReadModelStore,
 	processedStore port.ProcessedEventStore,
-	logger *slog.Logger,
+	logger *zap.SugaredLogger,
 ) *OrderProjectionHandler {
 	return &OrderProjectionHandler{
 		readStore:      readStore,
@@ -41,7 +42,7 @@ func (h *OrderProjectionHandler) Handle(ctx context.Context, event port.OutboxEv
 		return fmt.Errorf("check processed event: %w", err)
 	}
 	if processed {
-		h.logger.DebugContext(ctx, "event already processed, skipping", "event_id", event.ID, "type", event.EventType)
+		h.logger.Debugw("event already processed, skipping", "event_id", event.ID, "type", event.EventType)
 		return nil
 	}
 
@@ -53,7 +54,7 @@ func (h *OrderProjectionHandler) Handle(ctx context.Context, event port.OutboxEv
 	case "OrderConfirmed":
 		err = h.handleOrderConfirmed(ctx, event)
 	default:
-		h.logger.WarnContext(ctx, "unknown event type", "type", event.EventType)
+		h.logger.Warnw("unknown event type", "type", event.EventType)
 		return nil
 	}
 

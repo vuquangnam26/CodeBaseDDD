@@ -5,8 +5,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 // GormUnitOfWork implements port.UnitOfWork using GORM transactions.

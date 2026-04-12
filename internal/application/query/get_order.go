@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/namcuongq/order-service/internal/application/dto"
-	"github.com/namcuongq/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/dto"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // GetOrderByID is the query to retrieve a single order with its items.

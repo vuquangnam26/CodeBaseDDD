@@ -21,10 +21,6 @@ COPY migrations ./migrations
 ENV OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4318"
 ENV OTEL_SERVICE_NAME="order-service"
 
-# For SigNoz Cloud (uncomment and set your values):
-# ENV OTEL_EXPORTER_OTLP_ENDPOINT="https://ingest.in2.signoz.cloud:443"
-# ENV OTEL_EXPORTER_OTLP_HEADERS="signoz-ingestion-key=<your-ingestion-key>"
-# ENV OTEL_SERVICE_NAME="order-service"
 
 EXPOSE 8080
 

@@ -36,48 +36,6 @@ services:
     depends_on:
       - jaeger
 
-  # ===== SignOz Stack (Optional) =====
-  signoz-zookeeper:
-    image: library/zookeeper:latest
-    container_name: signoz-zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOO_CFG_EXTRA: ""
-    healthcheck:
-      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  signoz-clickhouse:
-    image: clickhouse/clickhouse-server:24.2-alpine
-    container_name: signoz-clickhouse
-    ports:
-      - "9000:9000"
-      - "8123:8123"
-    volumes:
-      - signoz-clickhouse-data:/var/lib/clickhouse/
-    depends_on:
-      signoz-zookeeper:
-        condition: service_healthy
-
-  signoz:
-    image: signoz/signoz:v0.117.1
-    container_name: signoz
-    ports:
-      - "3301:3301"
-    volumes:
-      - signoz-data:/var/lib/signoz/
-    environment:
-      CLICKHOUSE_ADDR: "signoz-clickhouse:9000"
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
-      QUERY_SERVICE_CLICKHOUSE_DATASOURCE: "tcp://signoz-clickhouse:9000/?database=signoz"
-    depends_on:
-      signoz-clickhouse:
-        condition: service_started
-
   postgres:
     image: postgres:15-alpine
     container_name: order-postgres
@@ -160,5 +118,3 @@ volumes:
   kafkadata:
   app-logs:
   prometheus-data:
-  signoz-data:
-  signoz-clickhouse-data:

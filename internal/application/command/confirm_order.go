@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 // ConfirmOrder is the command to confirm an order.

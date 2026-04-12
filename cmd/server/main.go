@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/namcuongq/order-service/internal/bootstrap"
+	"github.com/himmel/order-service/internal/bootstrap"
 )
 
 // @title Order Service API

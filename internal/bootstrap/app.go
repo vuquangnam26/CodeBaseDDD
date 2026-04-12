@@ -2,16 +2,14 @@ package bootstrap
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -20,15 +18,15 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 	gormtracing "gorm.io/plugin/opentelemetry/tracing"
 
-	"github.com/namcuongq/order-service/internal/application/command"
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/application/projection"
-	"github.com/namcuongq/order-service/internal/application/query"
-	"github.com/namcuongq/order-service/internal/infrastructure/messaging"
-	"github.com/namcuongq/order-service/internal/infrastructure/observability"
-	"github.com/namcuongq/order-service/internal/infrastructure/persistence"
-	"github.com/namcuongq/order-service/internal/infrastructure/worker"
-	httphandler "github.com/namcuongq/order-service/internal/interfaces/http"
+	"github.com/himmel/order-service/internal/application/command"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/projection"
+	"github.com/himmel/order-service/internal/application/query"
+	"github.com/himmel/order-service/internal/infrastructure/messaging"
+	"github.com/himmel/order-service/internal/infrastructure/observability"
+	"github.com/himmel/order-service/internal/infrastructure/persistence"
+	"github.com/himmel/order-service/internal/infrastructure/worker"
+	httphandler "github.com/himmel/order-service/internal/interfaces/http"
 )
 
 // Run is the main application lifecycle.
@@ -40,12 +38,11 @@ func Run() error {
 	}
 	defer func() {
 		if closeErr := closeLogFile(); closeErr != nil {
-			logger.Error("failed to close log file", "error", closeErr)
+			logger.Errorw("failed to close log file", "error", closeErr)
 		}
 	}()
-	slog.SetDefault(logger)
 
-	logger.Info("starting order-service",
+	logger.Infow("starting order-service",
 		"port", cfg.Server.Port,
 		"event_bus", cfg.EventBus.Type,
 	)
@@ -71,20 +68,28 @@ func Run() error {
 	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
+	// --- Persistence (for early initialization) ---
+	logStore := persistence.NewLogStore(db)
+	metricStore := persistence.NewMetricStore(db)
+
+	// Setup logger with database persistence
+	dbHook := observability.NewDatabaseHook(logStore.SaveLog)
+	loggerWithDB := observability.LoggerWithDatabasePersistence(logger, dbHook).Sugar()
+
 	// --- Tracing ---
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	shutdown, err := observability.InitTracer(ctx, cfg.Tracing.ServiceName, cfg.Tracing.OTLPEndpoint, logger)
+	shutdown, err := observability.InitTracer(ctx, cfg.Tracing.ServiceName, cfg.Tracing.OTLPEndpoint, loggerWithDB)
 	if err != nil {
-		logger.Warn("tracing init failed", "error", err)
+		loggerWithDB.Warnw("tracing init failed", "error", err)
 	}
 	defer shutdown(ctx)
 
 	// --- Logs Export ---
-	logsShutdown, err := observability.InitLogs(ctx, cfg.Tracing.ServiceName, cfg.Tracing.OTLPEndpoint, logger)
+	logsShutdown, err := observability.InitLogs(ctx, cfg.Tracing.ServiceName, cfg.Tracing.OTLPEndpoint, loggerWithDB)
 	if err != nil {
-		logger.Warn("logs export init failed", "error", err)
+		loggerWithDB.Warnw("logs export init failed", "error", err)
 	}
 	defer logsShutdown(ctx)
 
@@ -96,13 +101,15 @@ func Run() error {
 	promRegistry.MustRegister(prometheus.NewGoCollector())
 	promRegistry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 
-	metrics := observability.NewMetrics(promRegistry)
-
 	// --- Persistence ---
 	uow := persistence.NewGormUnitOfWork(db)
 	outboxStore := persistence.NewGormOutboxStore(db)
 	readModelStore := persistence.NewGormReadModelStore(db)
 	processedEventStore := persistence.NewGormProcessedEventStore(db)
+
+	// Initialize metrics with database persistence
+	metrics := observability.NewMetricsWithDatabasePersistence(promRegistry, metricStore)
+	defer metrics.Stop()
 
 	// --- Event Bus (pluggable: inmemory or kafka) ---
 	var eventBus port.EventBus
@@ -120,28 +127,28 @@ func Run() error {
 			MaxBytes:      10 << 20,
 			MaxWait:       500 * time.Millisecond,
 		}
-		kafkaBus = messaging.NewKafkaEventBus(kafkaCfg, logger)
+		kafkaBus = messaging.NewKafkaEventBus(kafkaCfg, loggerWithDB)
 		eventBus = kafkaBus
-		logger.Info("event bus: kafka",
+		loggerWithDB.Infow("event bus: kafka",
 			"brokers", cfg.Kafka.Brokers,
 			"topic", cfg.Kafka.Topic,
 			"consumer_group", cfg.Kafka.ConsumerGroup,
 		)
 	default:
-		eventBus = messaging.NewInMemoryEventBus(logger)
-		logger.Info("event bus: inmemory")
+		eventBus = messaging.NewInMemoryEventBus(loggerWithDB)
+		loggerWithDB.Infow("event bus: inmemory")
 	}
 
 	// --- Projection ---
-	projHandler := projection.NewOrderProjectionHandler(readModelStore, processedEventStore, logger)
-	projWorker := worker.NewProjectionWorker(eventBus, projHandler, logger)
+	projHandler := projection.NewOrderProjectionHandler(readModelStore, processedEventStore, loggerWithDB)
+	projWorker := worker.NewProjectionWorker(eventBus, projHandler, loggerWithDB)
 	projWorker.Setup()
 
 	// --- Outbox Worker ---
 	outboxWorker := worker.NewOutboxWorker(
 		outboxStore,
 		eventBus,
-		logger,
+		loggerWithDB,
 		cfg.Outbox.BatchSize,
 		cfg.Outbox.PollInterval,
 		metrics.OutboxPendingGauge,
@@ -157,44 +164,44 @@ func Run() error {
 	listOrdersH := query.NewListOrdersHandler(readModelStore)
 
 	// --- HTTP Router ---
-	r := chi.NewRouter()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
 
-	// Middleware stack.
-	r.Use(httphandler.RecoveryMiddleware(logger))
-	r.Use(httphandler.RequestIDMiddleware)
-	r.Use(httphandler.LoggingMiddleware(logger))
-	r.Use(httphandler.MetricsMiddleware(metrics.HTTPRequestDuration))
+	// Middleware stack
+	r.Use(httphandler.GinRecoveryMiddleware(loggerWithDB))
+	r.Use(httphandler.GinRequestIDMiddleware())
+	loggerWithDB.Infow("DEBUG: Registering logging middleware with database", "db_not_nil", db != nil)
+	r.Use(httphandler.GinLoggingMiddlewareWithDB(loggerWithDB, db))
+	r.Use(httphandler.GinMetricsMiddleware(metrics.HTTPRequestDuration))
 
-	// Health & metrics endpoints.
-	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "alive"})
+	// Health & metrics endpoints
+	r.GET("/health/live", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "alive"})
 	})
-	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
-		if err := sqlDB.PingContext(r.Context()); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]string{"status": "not ready", "error": err.Error()})
+	r.GET("/health/ready", func(c *gin.Context) {
+		if err := sqlDB.PingContext(c.Request.Context()); err != nil {
+			loggerWithDB.Warnw("health check failed", "error", err)
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "not ready", "error": err.Error()})
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ready"})
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
-	r.Handle("/metrics", promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}))
+	r.GET("/metrics", gin.WrapF(promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}).ServeHTTP))
 
-	// API routes.
-	handler := httphandler.NewHandler(createOrderH, addItemH, confirmOrderH, getOrderH, listOrdersH, logger)
-	handler.RegisterRoutes(r)
+	// API routes
+	handler := httphandler.NewHandler(createOrderH, addItemH, confirmOrderH, getOrderH, listOrdersH, loggerWithDB)
+	handler.RegisterGinRoutes(r)
 
-	// Admin: requeue failed events.
-	r.Post("/admin/outbox/requeue", func(w http.ResponseWriter, r *http.Request) {
-		count, err := outboxStore.RequeueFailed(r.Context())
+	// Admin: requeue failed events
+	r.POST("/admin/outbox/requeue", func(c *gin.Context) {
+		count, err := outboxStore.RequeueFailed(c.Request.Context())
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			loggerWithDB.Errorw("failed to requeue events", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]int64{"requeued": count})
+		loggerWithDB.Infow("events requeued successfully", "count", count)
+		c.JSON(http.StatusOK, gin.H{"requeued": count})
 	})
 
 	// --- Start Workers ---
@@ -211,7 +218,7 @@ func Run() error {
 			MaxWait:       500 * time.Millisecond,
 		}
 		reader := messaging.NewKafkaReader(kafkaCfg)
-		kafkaConsumer := worker.NewKafkaConsumerWorker(reader, kafkaBus, logger)
+		kafkaConsumer := worker.NewKafkaConsumerWorker(reader, kafkaBus, loggerWithDB)
 		go kafkaConsumer.Run(ctx)
 	}
 
@@ -221,12 +228,22 @@ func Run() error {
 		Handler: otelhttp.NewHandler(r, "http.server"),
 	}
 
-	// Graceful shutdown.
+	// Graceful shutdown
 	errCh := make(chan error, 1)
 	go func() {
-		logger.Info("http server listening", "addr", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
+		if cfg.Server.HTTPS.Enabled {
+			loggerWithDB.Infow("https server listening",
+				"addr", srv.Addr,
+				"cert_file", cfg.Server.HTTPS.CertFile,
+			)
+			if err := srv.ListenAndServeTLS(cfg.Server.HTTPS.CertFile, cfg.Server.HTTPS.KeyFile); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		} else {
+			loggerWithDB.Infow("http server listening", "addr", srv.Addr)
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
 		}
 	}()
 
@@ -235,18 +252,18 @@ func Run() error {
 
 	select {
 	case sig := <-quit:
-		logger.Info("received shutdown signal", "signal", sig)
+		loggerWithDB.Infow("received shutdown signal", "signal", sig)
 	case err := <-errCh:
 		return fmt.Errorf("server error: %w", err)
 	}
 
-	// Shutdown sequence.
-	cancel() // Stop workers.
+	// Shutdown sequence
+	cancel() // Stop workers
 
-	// Close Kafka writer if used.
+	// Close Kafka writer if used
 	if kafkaBus != nil {
 		if err := kafkaBus.Close(); err != nil {
-			logger.Error("failed to close kafka writer", "error", err)
+			loggerWithDB.Errorw("failed to close kafka writer", "error", err)
 		}
 	}
 
@@ -257,6 +274,6 @@ func Run() error {
 		return fmt.Errorf("server shutdown: %w", err)
 	}
 
-	logger.Info("server stopped gracefully")
+	loggerWithDB.Infow("server stopped gracefully")
 	return nil
 }

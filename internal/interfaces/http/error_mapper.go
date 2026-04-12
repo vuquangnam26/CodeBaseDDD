@@ -7,8 +7,8 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/namcuongq/order-service/internal/application/dto"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/application/dto"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 // mapAndWriteError converts domain/application errors to standardized HTTP responses.

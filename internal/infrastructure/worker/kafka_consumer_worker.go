@@ -3,14 +3,14 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
 	kafkago "github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/infrastructure/messaging"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/infrastructure/messaging"
 )
 
 // KafkaConsumerWorker reads messages from Kafka and dispatches them
@@ -18,13 +18,13 @@ import (
 type KafkaConsumerWorker struct {
 	reader *kafkago.Reader
 	bus    *messaging.KafkaEventBus
-	logger *slog.Logger
+	logger *zap.SugaredLogger
 }
 
 func NewKafkaConsumerWorker(
 	reader *kafkago.Reader,
 	bus *messaging.KafkaEventBus,
-	logger *slog.Logger,
+	logger *zap.SugaredLogger,
 ) *KafkaConsumerWorker {
 	return &KafkaConsumerWorker{
 		reader: reader,
@@ -36,7 +36,7 @@ func NewKafkaConsumerWorker(
 // Run starts the Kafka consumer loop. It commits offsets only after
 // successful processing (at-least-once delivery).
 func (w *KafkaConsumerWorker) Run(ctx context.Context) {
-	w.logger.InfoContext(ctx, "kafka consumer worker started",
+	w.logger.Infow("kafka consumer worker started",
 		"topic", w.reader.Config().Topic,
 		"group", w.reader.Config().GroupID,
 	)
@@ -44,9 +44,9 @@ func (w *KafkaConsumerWorker) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			w.logger.InfoContext(ctx, "kafka consumer worker shutting down")
+			w.logger.Infow("kafka consumer worker shutting down")
 			if err := w.reader.Close(); err != nil {
-				w.logger.ErrorContext(ctx, "failed to close kafka reader", "error", err)
+				w.logger.Errorw("failed to close kafka reader", "error", err)
 			}
 			return
 		default:
@@ -57,14 +57,14 @@ func (w *KafkaConsumerWorker) Run(ctx context.Context) {
 			if ctx.Err() != nil {
 				return // Context cancelled, shutting down.
 			}
-			w.logger.ErrorContext(ctx, "failed to fetch kafka message", "error", err)
+			w.logger.Errorw("failed to fetch kafka message", "error", err)
 			time.Sleep(1 * time.Second) // Backoff on transient errors.
 			continue
 		}
 
 		event, err := w.parseMessage(msg)
 		if err != nil {
-			w.logger.ErrorContext(ctx, "failed to parse kafka message",
+			w.logger.Errorw("failed to parse kafka message",
 				"error", err,
 				"partition", msg.Partition,
 				"offset", msg.Offset,
@@ -74,7 +74,7 @@ func (w *KafkaConsumerWorker) Run(ctx context.Context) {
 			continue
 		}
 
-		w.logger.DebugContext(ctx, "kafka: received event",
+		w.logger.Debugw("kafka: received event",
 			"event_id", event.ID,
 			"event_type", event.EventType,
 			"aggregate_id", event.AggregateID,
@@ -83,7 +83,7 @@ func (w *KafkaConsumerWorker) Run(ctx context.Context) {
 		)
 
 		if err := w.bus.HandleMessage(ctx, *event); err != nil {
-			w.logger.ErrorContext(ctx, "failed to handle kafka message",
+			w.logger.Errorw("failed to handle kafka message",
 				"event_id", event.ID,
 				"event_type", event.EventType,
 				"error", err,
@@ -95,7 +95,7 @@ func (w *KafkaConsumerWorker) Run(ctx context.Context) {
 
 		// Commit offset only after successful processing.
 		if err := w.reader.CommitMessages(ctx, msg); err != nil {
-			w.logger.ErrorContext(ctx, "failed to commit kafka offset",
+			w.logger.Errorw("failed to commit kafka offset",
 				"error", err,
 				"partition", msg.Partition,
 				"offset", msg.Offset,

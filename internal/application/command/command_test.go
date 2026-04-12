@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/namcuongq/order-service/internal/application/command"
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/domain"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/application/command"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/domain"
+	"github.com/himmel/order-service/internal/domain/order"
 )
 
 // --- Mock implementations ---

@@ -2,7 +2,6 @@ package observability
 
 import (
 	"context"
-	"log/slog"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -11,13 +10,14 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 // InitTracer sets up an OpenTelemetry tracer provider.
 // If otlpEndpoint is empty, a no-op tracer is used.
-func InitTracer(ctx context.Context, serviceName, otlpEndpoint string, logger *slog.Logger) (func(context.Context) error, error) {
+func InitTracer(ctx context.Context, serviceName, otlpEndpoint string, logger *zap.SugaredLogger) (func(context.Context) error, error) {
 	if otlpEndpoint == "" {
-		logger.Info("tracing disabled: no OTLP endpoint configured")
+		logger.Infow("tracing disabled: no OTLP endpoint configured")
 		otel.SetTracerProvider(trace.NewNoopTracerProvider())
 		return func(context.Context) error { return nil }, nil
 	}

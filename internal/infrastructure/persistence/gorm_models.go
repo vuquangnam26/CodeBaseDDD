@@ -73,3 +73,34 @@ type ProcessedEventModel struct {
 }
 
 func (ProcessedEventModel) TableName() string { return "processed_events" }
+
+// --- Logging and Metrics models ---
+
+// LogModel maps to the "logs" table
+type LogModel struct {
+	ID            int64     `gorm:"primaryKey;autoIncrement"`
+	Timestamp     time.Time `gorm:"not null;index;default:now()"`
+	Level         string    `gorm:"type:varchar(10);not null;index"`
+	Message       string    `gorm:"type:text;not null"`
+	LoggerName    *string   `gorm:"type:varchar(255)"`
+	Caller        *string   `gorm:"type:varchar(255)"`
+	TraceID       *string   `gorm:"type:varchar(32);index"`
+	CorrelationID *string   `gorm:"type:varchar(36);index"`
+	Fields        []byte    `gorm:"type:jsonb"`
+	CreatedAt     time.Time `gorm:"not null;index:,type:desc;default:now()"`
+}
+
+func (LogModel) TableName() string { return "logs" }
+
+// MetricModel maps to the "metrics" table
+type MetricModel struct {
+	ID         int64     `gorm:"primaryKey;autoIncrement"`
+	Timestamp  time.Time `gorm:"not null;index;default:now()"`
+	MetricName string    `gorm:"type:varchar(255);not null;index"`
+	MetricType string    `gorm:"type:varchar(20);not null"`
+	Value      float64   `gorm:"not null"`
+	Labels     []byte    `gorm:"type:jsonb"`
+	CreatedAt  time.Time `gorm:"not null;index:,type:desc;default:now()"`
+}
+
+func (MetricModel) TableName() string { return "metrics" }

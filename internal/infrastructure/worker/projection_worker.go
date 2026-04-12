@@ -1,10 +1,10 @@
 package worker
 
 import (
-	"log/slog"
+	"go.uber.org/zap"
 
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/application/projection"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/projection"
 )
 
 // ProjectionWorker subscribes to events and runs the projection handler.
@@ -13,13 +13,13 @@ import (
 type ProjectionWorker struct {
 	bus        port.EventBus
 	projection *projection.OrderProjectionHandler
-	logger     *slog.Logger
+	logger     *zap.SugaredLogger
 }
 
 func NewProjectionWorker(
 	bus port.EventBus,
 	proj *projection.OrderProjectionHandler,
-	logger *slog.Logger,
+	logger *zap.SugaredLogger,
 ) *ProjectionWorker {
 	return &ProjectionWorker{
 		bus:        bus,
@@ -30,7 +30,7 @@ func NewProjectionWorker(
 
 // Setup registers event handlers on the bus.
 func (w *ProjectionWorker) Setup() {
-	w.logger.Info("projection worker: registering event handlers")
+	w.logger.Infow("projection worker: registering event handlers")
 
 	w.bus.Subscribe("OrderCreated", w.projection.Handle)
 	w.bus.Subscribe("OrderItemAdded", w.projection.Handle)

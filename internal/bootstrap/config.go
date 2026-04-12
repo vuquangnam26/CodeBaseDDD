@@ -22,6 +22,13 @@ type Config struct {
 type ServerConfig struct {
 	Port            int
 	ShutdownTimeout time.Duration
+	HTTPS           HTTPSConfig
+}
+
+type HTTPSConfig struct {
+	Enabled  bool
+	CertFile string
+	KeyFile  string
 }
 
 type DatabaseConfig struct {
@@ -73,6 +80,11 @@ func LoadConfig() Config {
 		Server: ServerConfig{
 			Port:            envInt("SERVER_PORT", 8080),
 			ShutdownTimeout: envDuration("SERVER_SHUTDOWN_TIMEOUT", 15*time.Second),
+			HTTPS: HTTPSConfig{
+				Enabled:  envBool("HTTPS_ENABLED", false),
+				CertFile: envStr("HTTPS_CERT_FILE", ""),
+				KeyFile:  envStr("HTTPS_KEY_FILE", ""),
+			},
 		},
 		Database: DatabaseConfig{
 			Host:     envStr("DB_HOST", "localhost"),
@@ -136,6 +148,13 @@ func envDuration(key string, defaultVal time.Duration) time.Duration {
 		if d, err := time.ParseDuration(v); err == nil {
 			return d
 		}
+	}
+	return defaultVal
+}
+
+func envBool(key string, defaultVal bool) bool {
+	if v := os.Getenv(key); v != "" {
+		return strings.ToLower(v) == "true" || v == "1" || strings.ToLower(v) == "yes"
 	}
 	return defaultVal
 }

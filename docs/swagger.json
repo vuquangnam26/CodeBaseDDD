@@ -66,13 +66,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.PaginatedOrdersResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -96,7 +96,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.CreateOrderRequest"
                         }
                     }
                 ],
@@ -104,19 +104,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.CreateOrderResult"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -148,19 +148,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -201,25 +201,25 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -252,7 +252,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.AddItemRequest"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.AddItemRequest"
                         }
                     }
                 ],
@@ -269,25 +269,25 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -295,7 +295,7 @@
         }
     },
     "definitions": {
-        "github_com_namcuongq_order-service_internal_application_dto.AddItemRequest": {
+        "github_com_himmel_order-service_internal_application_dto.AddItemRequest": {
             "type": "object",
             "required": [
                 "product_id",
@@ -318,7 +318,7 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest": {
+        "github_com_himmel_order-service_internal_application_dto.CreateOrderRequest": {
             "type": "object",
             "required": [
                 "customer_id"
@@ -329,7 +329,7 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult": {
+        "github_com_himmel_order-service_internal_application_dto.CreateOrderResult": {
             "type": "object",
             "properties": {
                 "order_id": {
@@ -337,7 +337,7 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.ErrorResponse": {
+        "github_com_himmel_order-service_internal_application_dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -352,7 +352,7 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse": {
+        "github_com_himmel_order-service_internal_application_dto.OrderItemResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -375,7 +375,7 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.OrderResponse": {
+        "github_com_himmel_order-service_internal_application_dto.OrderResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -393,7 +393,7 @@
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse"
+                        "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderItemResponse"
                     }
                 },
                 "status": {
@@ -407,13 +407,13 @@
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse": {
+        "github_com_himmel_order-service_internal_application_dto.PaginatedOrdersResponse": {
             "type": "object",
             "properties": {
                 "orders": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse"
+                        "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderResponse"
                     }
                 },
                 "page": {

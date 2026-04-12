@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/namcuongq/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // NATSEventBus is a skeleton adapter for NATS.

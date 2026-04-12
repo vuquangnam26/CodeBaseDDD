@@ -3,20 +3,21 @@ package messaging
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 
-	"github.com/namcuongq/order-service/internal/application/port"
+	"go.uber.org/zap"
+
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // InMemoryEventBus is a channel-based event bus for development and testing.
 type InMemoryEventBus struct {
 	mu       sync.RWMutex
 	handlers map[string][]port.EventHandler
-	logger   *slog.Logger
+	logger   *zap.SugaredLogger
 }
 
-func NewInMemoryEventBus(logger *slog.Logger) *InMemoryEventBus {
+func NewInMemoryEventBus(logger *zap.SugaredLogger) *InMemoryEventBus {
 	return &InMemoryEventBus{
 		handlers: make(map[string][]port.EventHandler),
 		logger:   logger,
@@ -29,7 +30,7 @@ func (b *InMemoryEventBus) Publish(ctx context.Context, event port.OutboxEvent) 
 	b.mu.RUnlock()
 
 	if !ok || len(handlers) == 0 {
-		b.logger.DebugContext(ctx, "no handlers for event type", "type", event.EventType)
+		b.logger.Debugw("no handlers for event type", "type", event.EventType)
 		return nil
 	}
 

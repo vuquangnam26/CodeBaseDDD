@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/namcuongq/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/domain/order"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

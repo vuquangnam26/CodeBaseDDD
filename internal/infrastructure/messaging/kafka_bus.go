@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 
-	"github.com/namcuongq/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // KafkaEventBus implements port.EventBus using Apache Kafka.
@@ -22,8 +22,8 @@ import (
 // Subscribing: registers handlers that the KafkaConsumerWorker dispatches to
 // when it reads messages from the topic.
 type KafkaEventBus struct {
-	writer   *kafka.Writer
-	logger   *slog.Logger
+	writer *kafka.Writer
+	logger *zap.SugaredLogger
 
 	mu       sync.RWMutex
 	handlers map[string][]port.EventHandler
@@ -58,7 +58,7 @@ func DefaultKafkaConfig() KafkaConfig {
 }
 
 // NewKafkaEventBus creates a Kafka-backed event bus.
-func NewKafkaEventBus(cfg KafkaConfig, logger *slog.Logger) *KafkaEventBus {
+func NewKafkaEventBus(cfg KafkaConfig, logger *zap.SugaredLogger) *KafkaEventBus {
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(cfg.Brokers...),
 		Topic:        cfg.Topic,
@@ -119,7 +119,7 @@ func (b *KafkaEventBus) Publish(ctx context.Context, event port.OutboxEvent) err
 		return fmt.Errorf("write kafka message: %w", err)
 	}
 
-	b.logger.DebugContext(ctx, "kafka: published event",
+	b.logger.Debugw("kafka: published event",
 		"event_id", event.ID,
 		"event_type", event.EventType,
 		"aggregate_id", event.AggregateID,
@@ -146,7 +146,7 @@ func (b *KafkaEventBus) HandleMessage(ctx context.Context, event port.OutboxEven
 	b.mu.RUnlock()
 
 	if !ok || len(handlers) == 0 {
-		b.logger.DebugContext(ctx, "kafka: no handlers for event type", "type", event.EventType)
+		b.logger.Debugw("kafka: no handlers for event type", "type", event.EventType)
 		return nil
 	}
 
@@ -171,7 +171,7 @@ func (b *KafkaEventBus) dispatchLocal(ctx context.Context, event port.OutboxEven
 
 	for _, handler := range handlers {
 		if err := handler(ctx, event); err != nil {
-			b.logger.ErrorContext(ctx, "kafka: local handler error",
+			b.logger.Errorw("kafka: local handler error",
 				"event_type", event.EventType,
 				"error", err,
 			)

@@ -3,7 +3,7 @@ package order
 import (
 	"time"
 
-	domain "github.com/namcuongq/order-service/internal/domain"
+	domain "github.com/himmel/order-service/internal/domain"
 )
 
 const AggregateType = "Order"

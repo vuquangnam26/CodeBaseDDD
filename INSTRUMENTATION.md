@@ -247,18 +247,6 @@ services:
       OTEL_SERVICE_NAME: "order-service"
 ```
 
-### Docker (SigNoz Cloud)
-
-Update [docker/Dockerfile](docker/Dockerfile) at runtime:
-
-```bash
-docker run \
-  -e OTEL_EXPORTER_OTLP_ENDPOINT="https://ingest.in2.signoz.cloud:443" \
-  -e OTEL_EXPORTER_OTLP_HEADERS="signoz-ingestion-key=<key>" \
-  -e OTEL_SERVICE_NAME="order-service" \
-  order-service:latest
-```
-
 ### Kubernetes
 
 ```yaml
@@ -336,9 +324,9 @@ If you see "tracing disabled: no OTLP endpoint configured", the endpoint is not 
    docker logs order-otel-collector | grep -i "span\|metric"
    ```
 
-3. **Check SigNoz dashboard:**
-   - Go to Services → order-service
-   - Recent traces should appear within seconds
+3. **Check Jaeger dashboard:**
+   - Open Jaeger UI (http://localhost:16686)
+   - Search for `order-service` traces
 
 ## Performance Impact
 
@@ -357,7 +345,7 @@ For most applications, this overhead is negligible compared to I/O operations.
 1. Verify endpoint is reachable (check logs for errors)
 2. Ensure OTEL_EXPORTER_OTLP_ENDPOINT is set
 3. Restart application after changing environment
-4. Check SigNoz/Collector logs for ingestion errors
+4. Check Collector logs for ingestion errors
 
 ### High memory usage
 
@@ -373,7 +361,7 @@ For most applications, this overhead is negligible compared to I/O operations.
 
 ## Next Steps
 
-1. **View traces:** Open SigNoz/Jaeger dashboard
+1. **View traces:** Open Jaeger dashboard
 2. **Create dashboards:** Monitor key metrics
 3. **Set up alerts:** Get notified of errors
 4. **Add custom spans:** Instrument business logic

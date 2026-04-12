@@ -16,9 +16,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/namcuongq/order-service/internal/application/port"
-	"github.com/namcuongq/order-service/internal/domain/order"
-	"github.com/namcuongq/order-service/internal/infrastructure/persistence"
+	"github.com/himmel/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/domain/order"
+	"github.com/himmel/order-service/internal/infrastructure/persistence"
 )
 
 func setupPostgres(t *testing.T) *gorm.DB {

@@ -72,13 +72,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.PaginatedOrdersResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.CreateOrderRequest"
                         }
                     }
                 ],
@@ -110,19 +110,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.CreateOrderResult"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -154,19 +154,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -207,25 +207,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -258,7 +258,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.AddItemRequest"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.AddItemRequest"
                         }
                     }
                 ],
@@ -275,25 +275,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.ErrorResponse"
+                            "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.ErrorResponse"
                         }
                     }
                 }
@@ -301,7 +301,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_namcuongq_order-service_internal_application_dto.AddItemRequest": {
+        "github_com_himmel_order-service_internal_application_dto.AddItemRequest": {
             "type": "object",
             "required": [
                 "product_id",
@@ -324,7 +324,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.CreateOrderRequest": {
+        "github_com_himmel_order-service_internal_application_dto.CreateOrderRequest": {
             "type": "object",
             "required": [
                 "customer_id"
@@ -335,7 +335,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.CreateOrderResult": {
+        "github_com_himmel_order-service_internal_application_dto.CreateOrderResult": {
             "type": "object",
             "properties": {
                 "order_id": {
@@ -343,7 +343,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.ErrorResponse": {
+        "github_com_himmel_order-service_internal_application_dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -358,7 +358,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse": {
+        "github_com_himmel_order-service_internal_application_dto.OrderItemResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -381,7 +381,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.OrderResponse": {
+        "github_com_himmel_order-service_internal_application_dto.OrderResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -399,7 +399,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderItemResponse"
+                        "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderItemResponse"
                     }
                 },
                 "status": {
@@ -413,13 +413,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_namcuongq_order-service_internal_application_dto.PaginatedOrdersResponse": {
+        "github_com_himmel_order-service_internal_application_dto.PaginatedOrdersResponse": {
             "type": "object",
             "properties": {
                 "orders": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_namcuongq_order-service_internal_application_dto.OrderResponse"
+                        "$ref": "#/definitions/github_com_himmel_order-service_internal_application_dto.OrderResponse"
                     }
                 },
                 "page": {

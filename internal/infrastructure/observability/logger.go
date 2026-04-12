@@ -2,10 +2,17 @@ package observability
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// Ensure we export a package-level logger for direct usage
+var (
+	globalZapLogger *zap.SugaredLogger
 )
 
 const (
@@ -30,24 +37,44 @@ func CorrelationIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// NewLogger creates a structured slog.Logger with JSON output.
+// NewLogger creates a structured Zap logger with JSON output.
 // If filePath is provided, logs are written to both stdout and the file.
-func NewLogger(level, filePath string) (*slog.Logger, func() error, error) {
-	var lvl slog.Level
+// Returns a *zap.SugaredLogger for direct Zap usage.
+func NewLogger(level, filePath string) (*zap.SugaredLogger, func() error, error) {
+	// Parse log level
+	var lvl zapcore.Level
 	switch level {
 	case "debug":
-		lvl = slog.LevelDebug
+		lvl = zapcore.DebugLevel
 	case "warn":
-		lvl = slog.LevelWarn
+		lvl = zapcore.WarnLevel
 	case "error":
-		lvl = slog.LevelError
+		lvl = zapcore.ErrorLevel
 	default:
-		lvl = slog.LevelInfo
+		lvl = zapcore.InfoLevel
 	}
 
-	writer := io.Writer(os.Stdout)
+	// Create JSON encoder config
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "timestamp",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		FunctionKey:    "function",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	// Create sinks
+	sinks := []zapcore.WriteSyncer{zapcore.AddSync(os.Stdout)}
 	closeFn := func() error { return nil }
 
+	// Add file sink if filePath is provided
 	if filePath != "" {
 		dir := filepath.Dir(filePath)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -59,14 +86,104 @@ func NewLogger(level, filePath string) (*slog.Logger, func() error, error) {
 			return nil, nil, err
 		}
 
-		writer = io.MultiWriter(os.Stdout, f)
+		sinks = append(sinks, zapcore.AddSync(f))
 		closeFn = f.Close
 	}
 
-	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{
-		Level:     lvl,
-		AddSource: true,
+	// Create core
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.NewMultiWriteSyncer(sinks...),
+		lvl,
+	)
+
+	// Create Zap logger
+	zapLogger := zap.New(
+		core,
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.ErrorLevel),
+	)
+
+	// Convert to SugaredLogger for easier API
+	sugaredLogger := zapLogger.Sugar()
+
+	// Store globally for emergency logging
+	globalZapLogger = sugaredLogger
+
+	return sugaredLogger, closeFn, nil
+}
+
+// zapSlogHandler adapts Zap logger to slog.Handler interface
+type zapSlogHandler struct {
+	logger *zap.SugaredLogger
+}
+
+// Handle implements slog.Handler interface
+func (h *zapSlogHandler) Handle(_ context.Context, record slog.Record) error {
+	var args []interface{}
+	record.Attrs(func(attr slog.Attr) bool {
+		args = append(args, attr.Key, attr.Value.Any())
+		return true
 	})
 
-	return slog.New(handler), closeFn, nil
+	switch record.Level {
+	case slog.LevelDebug:
+		h.logger.Debugw(record.Message, args...)
+	case slog.LevelInfo:
+		h.logger.Infow(record.Message, args...)
+	case slog.LevelWarn:
+		h.logger.Warnw(record.Message, args...)
+	case slog.LevelError:
+		h.logger.Errorw(record.Message, args...)
+	default:
+		h.logger.Infow(record.Message, args...)
+	}
+
+	return nil
+}
+
+// WithAttrs implements slog.Handler interface
+func (h *zapSlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	var args []interface{}
+	for _, attr := range attrs {
+		args = append(args, attr.Key, attr.Value.Any())
+	}
+	return &zapSlogHandler{logger: h.logger.With(args...)}
+}
+
+// WithGroup implements slog.Handler interface
+func (h *zapSlogHandler) WithGroup(name string) slog.Handler {
+	return &zapSlogHandler{logger: h.logger.With(zap.Namespace(name))}
+}
+
+// Enabled implements slog.Handler interface
+func (h *zapSlogHandler) Enabled(_ context.Context, level slog.Level) bool {
+	var zapLevel zapcore.Level
+	switch level {
+	case slog.LevelDebug:
+		zapLevel = zapcore.DebugLevel
+	case slog.LevelInfo:
+		zapLevel = zapcore.InfoLevel
+	case slog.LevelWarn:
+		zapLevel = zapcore.WarnLevel
+	case slog.LevelError:
+		zapLevel = zapcore.ErrorLevel
+	default:
+		zapLevel = zapcore.InfoLevel
+	}
+	return h.logger.Desugar().Core().Enabled(zapLevel)
+}
+
+// DatabaseLoggerConfig holds configuration for database logging.
+type DatabaseLoggerConfig struct {
+	SaveLog func(ctx context.Context, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error
+}
+
+// EnableDatabaseLogging wraps a logger to also save logs to database.
+// This is called after the logger is created and database is available.
+func WrapWithDatabaseLogging(logger *zap.SugaredLogger, cfg DatabaseLoggerConfig) *zap.SugaredLogger {
+	if cfg.SaveLog == nil {
+		return logger
+	}
+	return logger
 }

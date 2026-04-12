@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	domain "github.com/namcuongq/order-service/internal/domain"
+	domain "github.com/himmel/order-service/internal/domain"
 )
 
 // OutboxEvent is the persistence representation of a domain event in the outbox.

@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	domain "github.com/namcuongq/order-service/internal/domain"
-	"github.com/namcuongq/order-service/internal/application/port"
+	domain "github.com/himmel/order-service/internal/domain"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 const (

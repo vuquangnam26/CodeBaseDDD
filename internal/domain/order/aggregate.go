@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	domain "github.com/namcuongq/order-service/internal/domain"
+	domain "github.com/himmel/order-service/internal/domain"
 )
 
 // Order is the aggregate root for order management.

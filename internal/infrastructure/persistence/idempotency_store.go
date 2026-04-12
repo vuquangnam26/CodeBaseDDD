@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/namcuongq/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // GormIdempotencyStore implements port.IdempotencyService using PostgreSQL.

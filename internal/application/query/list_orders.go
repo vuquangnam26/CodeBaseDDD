@@ -6,8 +6,8 @@ import (
 
 	"github.com/ahmetb/go-linq/v3"
 	"github.com/google/uuid"
-	"github.com/namcuongq/order-service/internal/application/dto"
-	"github.com/namcuongq/order-service/internal/application/port"
+	"github.com/himmel/order-service/internal/application/dto"
+	"github.com/himmel/order-service/internal/application/port"
 )
 
 // ListOrders is the query to list orders with filters, sorting, and pagination.
