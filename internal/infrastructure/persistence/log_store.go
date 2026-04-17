@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // LogStore provides database persistence for logs.
@@ -55,7 +56,8 @@ func (s *LogStore) SaveLog(ctx context.Context, level, message, loggerName, call
 		CreatedAt:     time.Now(),
 	}
 
-	return s.db.WithContext(ctx).Create(log).Error
+	// Use a silent session to prevent recursive logging if the DB logger is set to this same logger
+	return s.db.Session(&gorm.Session{Logger: gormlogger.Default.LogMode(gormlogger.Silent)}).WithContext(ctx).Create(log).Error
 }
 
 // QueryLogs queries logs with filters.

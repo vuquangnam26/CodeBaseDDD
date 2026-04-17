@@ -17,6 +17,7 @@ type Config struct {
 	Tracing  TracingConfig
 	Log      LogConfig
 	EventBus EventBusConfig
+	SigNoz   SigNozConfig
 }
 
 type ServerConfig struct {
@@ -74,6 +75,12 @@ type EventBusConfig struct {
 	Type string
 }
 
+type SigNozConfig struct {
+	// OTLPEndpoint is the SigNoz OTel Collector address (e.g. "localhost:4318").
+	// This is separate from the local OTel Collector used for Jaeger traces.
+	OTLPEndpoint string
+}
+
 // LoadConfig reads configuration from environment variables with sensible defaults.
 func LoadConfig() Config {
 	return Config{
@@ -116,6 +123,9 @@ func LoadConfig() Config {
 		},
 		EventBus: EventBusConfig{
 			Type: envStr("EVENT_BUS_TYPE", "inmemory"),
+		},
+		SigNoz: SigNozConfig{
+			OTLPEndpoint: envStr("SIGNOZ_OTLP_ENDPOINT", ""),
 		},
 	}
 }

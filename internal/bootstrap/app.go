@@ -86,12 +86,17 @@ func Run() error {
 	}
 	defer shutdown(ctx)
 
-	// --- Logs Export ---
-	logsShutdown, err := observability.InitLogs(ctx, cfg.Tracing.ServiceName, cfg.Tracing.OTLPEndpoint, loggerWithDB)
+	// --- SigNoz Logs ---
+	newLogger, signozCleanup, err := observability.InitSigNozLogger(ctx, cfg.Tracing.ServiceName, cfg.SigNoz.OTLPEndpoint, loggerWithDB)
 	if err != nil {
-		loggerWithDB.Warnw("logs export init failed", "error", err)
+		loggerWithDB.Warnw("SigNoz logs init failed, continuing without SigNoz", "error", err)
+	} else {
+		loggerWithDB = newLogger
 	}
-	defer logsShutdown(ctx)
+	defer signozCleanup()
+	
+	// Update GORM logger to use our Zap logger (which now includes DB persistence and SigNoz)
+	db.Logger = observability.NewGormLogger(loggerWithDB).LogMode(gormlogger.Info)
 
 	// --- Metrics ---
 	promRegistry := prometheus.NewRegistry()

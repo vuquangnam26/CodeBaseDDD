@@ -106,8 +106,11 @@ func (c *hookedCore) With(fields []zapcore.Field) zapcore.Core {
 }
 
 // Check delegates to the wrapped core and returns a checked entry with hooks.
-func (c *hookedCore) Check(entry zapcore.Entry, first *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	return c.core.Check(entry, first)
+func (c *hookedCore) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if c.Enabled(entry.Level) {
+		return ce.AddCore(entry, c)
+	}
+	return ce
 }
 
 // Write writes the entry and calls all registered hooks.

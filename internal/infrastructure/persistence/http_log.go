@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // SaveHTTPLog saves an HTTP request log directly to the database.
@@ -49,5 +50,6 @@ func SaveHTTPLog(db *gorm.DB, ctx context.Context, method, path string, statusCo
 		CreatedAt:     time.Now(),
 	}
 
-	return db.WithContext(bgCtx).Create(log).Error
+	// Use a silent session to prevent recursive logging
+	return db.Session(&gorm.Session{Logger: gormlogger.Default.LogMode(gormlogger.Silent)}).WithContext(bgCtx).Create(log).Error
 }
