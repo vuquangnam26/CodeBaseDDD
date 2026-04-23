@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -176,7 +177,7 @@ func (h *zapSlogHandler) Enabled(_ context.Context, level slog.Level) bool {
 
 // DatabaseLoggerConfig holds configuration for database logging.
 type DatabaseLoggerConfig struct {
-	SaveLog func(ctx context.Context, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error
+	SaveLog func(ctx context.Context, timestamp time.Time, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error
 }
 
 // EnableDatabaseLogging wraps a logger to also save logs to database.

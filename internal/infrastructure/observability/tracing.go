@@ -22,8 +22,13 @@ func InitTracer(ctx context.Context, serviceName, otlpEndpoint string, logger *z
 		return func(context.Context) error { return nil }, nil
 	}
 
+	endpoint, err := normalizeOTLPEndpoint(otlpEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint(otlpEndpoint),
+		otlptracehttp.WithEndpoint(endpoint),
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
@@ -50,6 +55,6 @@ func InitTracer(ctx context.Context, serviceName, otlpEndpoint string, logger *z
 		propagation.Baggage{},
 	))
 
-	logger.Info("tracing initialized", "endpoint", otlpEndpoint)
+	logger.Info("tracing initialized", "endpoint", endpoint)
 	return tp.Shutdown, nil
 }

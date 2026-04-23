@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	otelgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -173,6 +174,10 @@ func Run() error {
 	r := gin.New()
 
 	// Middleware stack
+	r.Use(otelgin.Middleware(cfg.Tracing.ServiceName, otelgin.WithGinFilter(func(c *gin.Context) bool {
+		path := c.Request.URL.Path
+		return path != "/metrics" && !strings.HasPrefix(path, "/health/") && !strings.HasPrefix(path, "/swagger/")
+	})))
 	r.Use(httphandler.GinRecoveryMiddleware(loggerWithDB))
 	r.Use(httphandler.GinRequestIDMiddleware())
 	loggerWithDB.Infow("DEBUG: Registering logging middleware with database", "db_not_nil", db != nil)
@@ -230,7 +235,7 @@ func Run() error {
 	// --- HTTP Server ---
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler: otelhttp.NewHandler(r, "http.server"),
+		Handler: r,
 	}
 
 	// Graceful shutdown

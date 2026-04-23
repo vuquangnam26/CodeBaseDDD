@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -10,12 +11,12 @@ import (
 
 // DatabaseHook sends logs to database.
 type DatabaseHook struct {
-	SaveLog func(ctx context.Context, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error
+	SaveLog func(ctx context.Context, timestamp time.Time, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error
 	mu      sync.Mutex
 }
 
 // NewDatabaseHook creates a new database hook for logs.
-func NewDatabaseHook(saveFn func(ctx context.Context, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error) *DatabaseHook {
+func NewDatabaseHook(saveFn func(ctx context.Context, timestamp time.Time, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error) *DatabaseHook {
 	return &DatabaseHook{
 		SaveLog: saveFn,
 	}
@@ -42,11 +43,11 @@ func (h *DatabaseHook) Hook(entry zapcore.Entry, fields []zapcore.Field) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// Convert fields to map
-	fieldsMap := make(map[string]interface{})
+	encoder := zapcore.NewMapObjectEncoder()
 	for _, field := range fields {
-		fieldsMap[field.Key] = field.Interface
+		field.AddTo(encoder)
 	}
+	fieldsMap := encoder.Fields
 
 	// Extract caller info if available
 	caller := entry.Caller.String()
@@ -69,7 +70,7 @@ func (h *DatabaseHook) Hook(entry zapcore.Entry, fields []zapcore.Field) error {
 		}
 	}
 
-	return h.SaveLog(context.Background(), entry.Level.String(), entry.Message, entry.LoggerName, caller, traceID, correlationID, fieldsMap)
+	return h.SaveLog(context.Background(), entry.Time, entry.Level.String(), entry.Message, entry.LoggerName, caller, traceID, correlationID, fieldsMap)
 }
 
 // LoggerWithDatabasePersistence creates a logger that persists logs to database.
@@ -83,7 +84,7 @@ func LoggerWithDatabasePersistence(baseLogger *zap.SugaredLogger, hooks ...*Data
 		hooks: hooks,
 	}
 
-	return zap.New(wrappedCore)
+	return zap.New(wrappedCore, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 }
 
 // hookedCore wraps a zapcore.Core and calls hooks on each write.

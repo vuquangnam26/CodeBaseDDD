@@ -20,7 +20,7 @@ func NewLogStore(db *gorm.DB) *LogStore {
 }
 
 // SaveLog saves a log entry to the database.
-func (s *LogStore) SaveLog(ctx context.Context, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error {
+func (s *LogStore) SaveLog(ctx context.Context, timestamp time.Time, level, message, loggerName, caller, traceID, correlationID string, fields map[string]interface{}) error {
 	var fieldsData []byte
 	var err error
 	if fields != nil {
@@ -45,7 +45,7 @@ func (s *LogStore) SaveLog(ctx context.Context, level, message, loggerName, call
 	}
 
 	log := &LogModel{
-		Timestamp:     time.Now(),
+		Timestamp:     timestamp,
 		Level:         level,
 		Message:       message,
 		LoggerName:    loggerNamePtr,
@@ -53,7 +53,7 @@ func (s *LogStore) SaveLog(ctx context.Context, level, message, loggerName, call
 		TraceID:       traceIDPtr,
 		CorrelationID: correlationIDPtr,
 		Fields:        fieldsData,
-		CreatedAt:     time.Now(),
+		CreatedAt:     timestamp,
 	}
 
 	// Use a silent session to prevent recursive logging if the DB logger is set to this same logger

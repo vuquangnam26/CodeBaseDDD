@@ -1,7 +1,11 @@
 package http
 
 import (
+	"bytes"
+	"io"
 	"net/http"
+	"mime"
+	"strings"
 	"runtime/debug"
 	"strconv"
 	"time"
@@ -9,12 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/himmel/order-service/internal/infrastructure/observability"
-	"github.com/himmel/order-service/internal/infrastructure/persistence"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
+
+const maxLoggedBodyBytes = 4096
 
 // RequestIDMiddleware injects a unique correlation ID into each request context.
 func RequestIDMiddleware(next http.Handler) http.Handler {
@@ -112,6 +118,9 @@ func GinRequestIDMiddleware() gin.HandlerFunc {
 			correlationID = uuid.New().String()
 		}
 		ctx := observability.ContextWithCorrelationID(c.Request.Context(), correlationID)
+		if span := trace.SpanFromContext(ctx); span.SpanContext().IsValid() {
+			span.SetAttributes(attribute.String("correlation_id", correlationID))
+		}
 		c.Request = c.Request.WithContext(ctx)
 		c.Header("X-Correlation-ID", correlationID)
 		c.Next()
@@ -127,7 +136,14 @@ func GinLoggingMiddleware(logger *zap.SugaredLogger) gin.HandlerFunc {
 func GinLoggingMiddlewareWithDB(logger *zap.SugaredLogger, db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
+		requestBody, requestBodyReadErr := readAndRestoreRequestBody(c.Request)
+		writer := &bodyLogWriter{ResponseWriter: c.Writer}
+		c.Writer = writer
 		c.Next()
+
+		if shouldSkipRequestTelemetry(c.Request.URL.Path) {
+			return
+		}
 
 		traceID := ""
 		spanID := ""
@@ -141,16 +157,22 @@ func GinLoggingMiddlewareWithDB(logger *zap.SugaredLogger, db *gorm.DB) gin.Hand
 
 		// Extract variables to prevent data races when c is recycled
 		reqMethod := c.Request.Method
-		reqPath := c.Request.URL.Path
+		reqPath := c.FullPath()
+		if reqPath == "" {
+			reqPath = c.Request.URL.Path
+		}
 		resStatus := c.Writer.Status()
 		clientIP := c.ClientIP()
 		userAgent := c.Request.UserAgent()
-		reqCtx := c.Request.Context()
+		requestQuery := c.Request.URL.RawQuery
+		requestBodyLog := formatBodyForLog(c.ContentType(), requestBody)
+		responseBodyLog := formatBodyForLog(c.Writer.Header().Get("Content-Type"), writer.body.Bytes())
 
-		// Log to console
+		// Log the request. The logger already handles both DB persistence and SigNoz integration.
 		logger.Infow("http request",
 			"method", reqMethod,
 			"path", reqPath,
+			"query", requestQuery,
 			"status", resStatus,
 			"duration_ms", duration.Milliseconds(),
 			"correlation_id", correlationID,
@@ -158,19 +180,16 @@ func GinLoggingMiddlewareWithDB(logger *zap.SugaredLogger, db *gorm.DB) gin.Hand
 			"span_id", spanID,
 			"client_ip", clientIP,
 			"user_agent", userAgent,
+			"request_body", requestBodyLog,
+			"response_body", responseBodyLog,
 		)
 
-		// Save to database asynchronously if db is provided
-		if db != nil {
-			go func() {
-				err := persistence.SaveHTTPLog(db, reqCtx, reqMethod, reqPath,
-					resStatus, duration, correlationID, traceID, spanID, clientIP, userAgent)
-				if err != nil {
-					logger.Errorw("failed to save http log to database", "error", err, "method", reqMethod, "path", reqPath)
-				} else {
-					logger.Infow("successfully saved http log to database", "method", reqMethod, "path", reqPath)
-				}
-			}()
+		if requestBodyReadErr != nil {
+			logger.Warnw("failed to read request body for logging",
+				"method", reqMethod,
+				"path", reqPath,
+				"error", requestBodyReadErr,
+			)
 		}
 	}
 }
@@ -181,13 +200,76 @@ func GinMetricsMiddleware(histogram *prometheus.HistogramVec) gin.HandlerFunc {
 		start := time.Now()
 		c.Next()
 
+		if shouldSkipRequestTelemetry(c.Request.URL.Path) {
+			return
+		}
+
 		duration := time.Since(start).Seconds()
+		path := c.FullPath()
+		if path == "" {
+			path = c.Request.URL.Path
+		}
 		histogram.WithLabelValues(
 			c.Request.Method,
-			c.Request.URL.Path,
+			path,
 			strconv.Itoa(c.Writer.Status()),
 		).Observe(duration)
 	}
+}
+
+func shouldSkipRequestTelemetry(path string) bool {
+	return path == "/metrics" || strings.HasPrefix(path, "/health/") || strings.HasPrefix(path, "/swagger/")
+}
+
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body bytes.Buffer
+}
+
+func (w *bodyLogWriter) Write(data []byte) (int, error) {
+	w.body.Write(data)
+	return w.ResponseWriter.Write(data)
+}
+
+func (w *bodyLogWriter) WriteString(s string) (int, error) {
+	w.body.WriteString(s)
+	return w.ResponseWriter.WriteString(s)
+}
+
+func readAndRestoreRequestBody(req *http.Request) ([]byte, error) {
+	if req == nil || req.Body == nil {
+		return nil, nil
+	}
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	return body, nil
+}
+
+func formatBodyForLog(contentType string, body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err == nil {
+		switch {
+		case strings.HasPrefix(mediaType, "text/"):
+		case mediaType == "application/json", mediaType == "application/xml", mediaType == "application/x-www-form-urlencoded":
+		default:
+			return "<omitted: non-text body>"
+		}
+	}
+
+	if len(body) > maxLoggedBodyBytes {
+		return string(body[:maxLoggedBodyBytes]) + "...(truncated)"
+	}
+
+	return string(body)
 }
 
 // GinRecoveryMiddleware catches panics and returns 500 for Gin.

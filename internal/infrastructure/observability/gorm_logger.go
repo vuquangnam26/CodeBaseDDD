@@ -66,8 +66,8 @@ func (l *GormZapLogger) Trace(ctx context.Context, begin time.Time, fc func() (s
 	}
 
 	elapsed := time.Since(begin)
-	
-	// Extract trace information from context
+
+	// Extract trace information from context (may be empty for background workers)
 	traceID := ""
 	spanID := ""
 	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
@@ -75,10 +75,17 @@ func (l *GormZapLogger) Trace(ctx context.Context, begin time.Time, fc func() (s
 		spanID = sc.SpanID().String()
 	}
 
+	// Extract correlation_id from context
+	correlationID := CorrelationIDFromContext(ctx)
+
 	fields := []interface{}{
 		"elapsed_ms", elapsed.Milliseconds(),
-		"trace_id",   traceID,
-		"span_id",    spanID,
+	}
+	if traceID != "" {
+		fields = append(fields, "trace_id", traceID, "span_id", spanID)
+	}
+	if correlationID != "" {
+		fields = append(fields, "correlation_id", correlationID)
 	}
 
 	switch {
